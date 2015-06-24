@@ -4,8 +4,9 @@ var WalletController = require('./controllers/wallet');
 
 var server = Restify.createServer();
 
-server.use(restify.jsonp());
-server.use(restify.bodyParser({ mapParams: true});
+server.use(Restify.acceptParser(server.acceptable));
+server.use(Restify.jsonp());
+server.use(Restify.bodyParser({ mapParams: true }));
 
 
 server.post('/v1/wallet', WalletController.create);
