@@ -23,6 +23,10 @@ var db = {
      * query to a promise
      */
     promiseQuery: function(connection, query, values) {
+        // if we are chaining multiple queries
+        if (connection.connection) {
+            connection = connection.connection;
+        }
         return new Promise(function(resolve, reject) {
             connection.client.query(
                 {
@@ -31,9 +35,17 @@ var db = {
                 }, 
                 function(error, result) {
                     if (error) {
-                        reject(error);
+                        reject({
+                            success: false,
+                            error: error,
+                            connection: connection
+                        });
                     } else {
-                        resolve(result);
+                        resolve({
+                            success: true,
+                            result: result,
+                            connection: connection
+                        });
                     }
             });
         });

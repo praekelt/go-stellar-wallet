@@ -5,7 +5,33 @@ var Sjcl = require('sjcl');
 var DbUtil = require('../utils/db');
 var CryptoUtil = require('../utils/crypto');
 
-var wallet = {
+var Wallet = {
+    fetch: function(msisdn, pin) {
+        // fetch salt, calculate pin hash, validate pin hash
+        return DbUtil.promiseConnection()
+            .then(DbUtil.chainedQuery(
+                "SELECT address, publickey, privatekey, pinhash, salt \
+                 FROM wallet \
+                 WHERE msisdn = $1", [msisdn]))
+            .then(function(result) {
+                if (result.result.rows.length == 0) {
+                    return {
+                        error_message: 'No such user'
+                    };
+                }
+                var row = result.result.rows[0]
+                var computedPinHash = CryptoUtil.hash(pin, row.salt);
+                if (row.pinhash === computedPinHash) {
+                    // yay, pin is correct we can now decrypt private key
+                    row.privatekey = CryptoUtil.decryptData(row.privatekey, pin);
+                    return row;
+                } else {
+                    return {
+                        error_message: 'Incorrect pin'
+                    };
+                }
+            });
+    },
     
     create: function(msisdn, pin) {
         var salt = Sjcl.codec.base64.fromBits(Sjcl.random.randomWords(64/4));
@@ -19,8 +45,10 @@ var wallet = {
 
         return DbUtil.promiseConnection()
             .then(DbUtil.chainedQuery(
-                "INSERT INTO wallet ( msisdn, address, publickey, privatekey, pinhash, salt) VALUES ( $1, $2, $3, $4, $5, $6)",
-                [msisdn, pinHash, address, publicKey, privateKeyEncrypted, salt]))
+                "INSERT INTO wallet  \
+                    (msisdn, address, publickey, privatekey, pinhash, salt) \
+                VALUES ( $1, $2, $3, $4, $5, $6)",
+                [msisdn, address, publicKey, privateKeyEncrypted, pinHash, salt]))
             .then(function(successResult) {
                 return {
                     success: true,
@@ -52,4 +80,4 @@ var wallet = {
         };
     }
 };
-module.exports = wallet;
+module.exports = Wallet;
