@@ -98,18 +98,11 @@ var Wallet = {
             error_message = 'pin too short, must be at least 5 digits';
         }
 
-        if (error_message != '') {
-            return next(new Restify.BadRequestError(error_message));
-        }
-
-        var createWalletPromise = WalletModel.create(msisdn, pin)
-            .done(function(result) {
-                // data from the model is good enough
-                res.send(JSON.stringify(result));
-                // calls the next handler in the restify chain
-                next();
-            });
-        
+        return {
+            msisdn: msisdn,
+            pin: pin,
+            error_message: error_message
+        };
     },
 };
 module.exports = Wallet;
