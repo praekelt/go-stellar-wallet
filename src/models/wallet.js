@@ -4,8 +4,32 @@ var Sjcl = require('sjcl');
 
 var DbUtil = require('../utils/db');
 var CryptoUtil = require('../utils/crypto');
+var sequelize = require('./db').sequelize;
+var Sequelize = require('sequelize');
 
 var wallet = {
+    Wallet: sequelize.define('wallet', {
+        msisdn: {
+            type: Sequelize.STRING,
+            unique: true
+        },
+        address: {
+            type: Sequelize.STRING,
+            unique: true
+        },
+        publickey: {
+            type: Sequelize.STRING(2000)
+        },
+        privatekey: {
+            type: Sequelize.STRING(2000)
+        },
+        pinhash: {
+            type: Sequelize.STRING
+        },
+        salt: {
+            type: Sequelize.STRING
+        },
+    }),
     
     create: function(msisdn, pin) {
         var salt = Sjcl.codec.base64.fromBits(Sjcl.random.randomWords(64/4));
@@ -17,22 +41,27 @@ var wallet = {
         var privateKeyEncrypted = CryptoUtil.encryptData(privateKey, encryptionKey);
         var address = this.addressFromPublicKey(publicKey);
 
-        return DbUtil.promiseConnection()
-            .then(DbUtil.chainedQuery(
-                "INSERT INTO wallet ( msisdn, address, publickey, privatekey, pinhash, salt) VALUES ( $1, $2, $3, $4, $5, $6)",
-                [msisdn, pinHash, address, publicKey, privateKeyEncrypted, salt]))
-            .then(function(successResult) {
-                return {
-                    success: true,
-                    publicKey: publicKey,
-                    privateKey: privateKey,
-                    address: address
-                };
-            }, function(failureResult) {
-                return {
-                    success: false
-                };
-            });
+
+        return this.Wallet.create({
+            msisdn: msisdn,
+            address: address,
+            publickey: publicKey,
+            privatekey: privateKeyEncrypted,
+            pinhash: pinHash,
+            salt: salt
+        }).then(function(result) {
+            return {
+                success: true,
+                publicKey: publicKey,
+                privateKey: privateKey,
+                address: address
+            };
+        }, function(error) {
+            return {
+                success: false,
+                errorMessage: error.errors[0].message
+            };
+        });
     },
 
     addressFromPublicKey: function(publicKey) {
