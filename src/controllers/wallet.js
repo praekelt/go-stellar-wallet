@@ -28,6 +28,16 @@ var Wallet = {
         
     },
 
+    fetchAddress: function(req, res, next) {
+        var msisdn = req.params['msisdn'];
+
+        WalletModel.fetchAddress(msisdn)
+            .done(function(result) {
+                res.send(JSON.stringify(result))
+                next();
+            });
+    },
+
     fetch: function(req, res, next) {
         var auth_headers = Wallet._parseAuthorizationHeader(req);
         var params = Wallet._parseWalletParams(

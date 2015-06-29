@@ -32,6 +32,28 @@ var Wallet = {
 
 
     /**
+     * Fetch just the address corresponding to an MSISDN
+     */
+    fetchAddress: function(msisdn) {
+        return this.Wallet.findOne({
+            where: {
+                msisdn: msisdn
+            }
+        }).then(function(dbResult) {
+            if(!dbResult) {
+                return {
+                    error_message: 'No such wallet exists'
+                };
+            }
+            var data = dbResult.dataValues;
+            return {
+                msisdn: data.msisdn,
+                address: data.address,
+                error_message: ''
+            };
+        });
+    },
+    /**
      * Lookup wallet and decrypt private key
      */
     fetch: function(msisdn, pin) {
@@ -47,7 +69,6 @@ var Wallet = {
                 };
             }
             var data = dbResult.dataValues;
-            console.log(data);
             var computedPinHash = CryptoUtil.hash(pin, data.salt);
             if (data.pinhash === computedPinHash) {
                 // yay, pin is correct we can now decrypt private key

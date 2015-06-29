@@ -7,6 +7,9 @@ var sequelize = new Sequelize('stellar-wallet', 'stellar-wallet', 'stellar-walle
     logging: console.error
     });
 
+sequelize.sync();
+
 module.exports = {
     sequelize: sequelize
 };
+require('./wallet');
