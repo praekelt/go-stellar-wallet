@@ -22,7 +22,7 @@ var Wallet = {
         WalletModel.create(params.msisdn, params.pin)
             .done(function(result) {
                 // data from the model is good enough
-                res.send(JSON.stringify(result));
+                res.send(result);
                 next();
             });
         
@@ -33,7 +33,7 @@ var Wallet = {
 
         WalletModel.fetchAddress(msisdn)
             .done(function(result) {
-                res.send(JSON.stringify(result))
+                res.send(result)
                 next();
             });
     },
@@ -52,7 +52,7 @@ var Wallet = {
 
         WalletModel.fetch(params.msisdn, auth_headers.pin)
             .done(function(result) {
-                res.send(JSON.stringify(result));
+                res.send(result);
                 next();
             });
     },
