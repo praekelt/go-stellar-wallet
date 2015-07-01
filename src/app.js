@@ -19,5 +19,5 @@ server.listen(Config.PORT, function() {
 	console.log('Listening for requests');
 });
 server.on('uncaughtException', function (req, res, route, err) {
-    console.log('uncaughtException', err.stack);
+    console.error('uncaughtException', err.stack);
 });
