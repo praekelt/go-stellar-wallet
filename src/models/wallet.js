@@ -122,4 +122,4 @@ var Wallet = {
         });
     },
 };
-zRdule.exports = Wallet;
+module.exports = Wallet;
