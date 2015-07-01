@@ -22,10 +22,20 @@ var WalletController = {
         WalletModel.create(params.msisdn, params.pin)
             .done(function(result) {
                 // data from the model is good enough
-                res.send(JSON.stringify(result));
+                res.send(result);
                 next();
             });
         
+    },
+
+    fetchAddress: function(req, res, next) {
+        var msisdn = req.params['msisdn'];
+
+        WalletModel.fetchAddress(msisdn)
+            .done(function(result) {
+                res.send(result)
+                next();
+            });
     },
 
     fetch: function(req, res, next) {
@@ -42,7 +52,7 @@ var WalletController = {
 
         WalletModel.fetch(params.msisdn, auth_headers.pin)
             .done(function(result) {
-                res.send(JSON.stringify(result));
+                res.send(result);
                 next();
             });
     },

@@ -32,6 +32,28 @@ var Wallet = {
 
 
     /**
+     * Fetch just the address corresponding to an MSISDN
+     */
+    fetchAddress: function(msisdn) {
+        return this.Wallet.findOne({
+            where: {
+                msisdn: msisdn
+            }
+        }).then(function(dbResult) {
+            if(!dbResult) {
+                return {
+                    error_message: 'No such wallet exists'
+                };
+            }
+            var data = dbResult.dataValues;
+            return {
+                msisdn: data.msisdn,
+                address: data.address,
+                error_message: ''
+            };
+        });
+    },
+    /**
      * Lookup wallet and decrypt private key
      */
     fetch: function(msisdn, pin) {
@@ -47,7 +69,6 @@ var Wallet = {
                 };
             }
             var data = dbResult.dataValues;
-            console.log(data);
             var computedPinHash = CryptoUtil.hash(pin, data.salt);
             if (data.pinhash === computedPinHash) {
                 // yay, pin is correct we can now decrypt private key
@@ -71,13 +92,13 @@ var Wallet = {
      */
     create: function(msisdn, pin) {
         var salt = Sjcl.codec.base64.fromBits(Sjcl.random.randomWords(64/4));
-        var key = this._generateKeyPair();
-        var privateKey = key.privateKey;
-        var publicKey = key.publicKey;
+        var key = StellarBase.Keypair.random();
+        var privateKey = key._secretKey.toString('base64');
+        var publicKey = key._publicKey.toString('base64');
         var encryptionKey = pin;
         var pinHash = CryptoUtil.hash(pin, salt);
         var privateKeyEncrypted = CryptoUtil.encryptData(privateKey, encryptionKey);
-        var address = this.addressFromPublicKey(publicKey);
+        var address = key.address();
 
         return this.Wallet.create({
             msisdn: msisdn,
@@ -100,22 +121,5 @@ var Wallet = {
             };
         });
     },
-
-    addressFromPublicKey: function(publicKey) {
-        var publicKeyBytes = new Buffer(publicKey, 'base64');
-        var keyPair = new StellarBase.Keypair({publicKey: publicKey});
-        return keyPair.address();
-    },
-
-    _generateKeyPair: function() {
-        seed = new Buffer(Sjcl.random.randomWords(32), 'base64');
-        // generate an elliptic curve key pair (http://ed25519.cr.yp.to/)
-        var keyPair = Ed25519.MakeKeypair(seed)
-
-        return {
-            publicKey: keyPair.publicKey.toString('base64'),
-            privateKey: keyPair.privateKey.toString('base64'),
-        };
-    }
 };
-module.exports = Wallet;
+zRdule.exports = Wallet;
