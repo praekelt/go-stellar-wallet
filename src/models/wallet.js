@@ -2,37 +2,73 @@ var StellarBase = require('stellar-base');
 var Ed25519 = require('ed25519');
 var Sjcl = require('sjcl');
 
-var DbUtil = require('../utils/db');
 var CryptoUtil = require('../utils/crypto');
+var sequelize = require('./db').sequelize;
+var Sequelize = require('sequelize');
 
 var Wallet = {
+    Wallet: sequelize.define('wallet', {
+        msisdn: {
+            type: Sequelize.STRING,
+            unique: true
+        },
+        address: {
+            type: Sequelize.STRING,
+            unique: true
+        },
+        publickey: {
+            type: Sequelize.STRING(2000)
+        },
+        privatekey: {
+            type: Sequelize.STRING(2000)
+        },
+        pinhash: {
+            type: Sequelize.STRING
+        },
+        salt: {
+            type: Sequelize.STRING
+        },
+    }),
+
+
+    /**
+     * Lookup wallet and decrypt private key
+     */
     fetch: function(msisdn, pin) {
         // fetch salt, calculate pin hash, validate pin hash
-        return DbUtil.promiseConnection()
-            .then(DbUtil.chainedQuery(
-                "SELECT address, publickey, privatekey, pinhash, salt \
-                 FROM wallet \
-                 WHERE msisdn = $1", [msisdn]))
-            .then(function(result) {
-                if (result.result.rows.length == 0) {
-                    return {
-                        error_message: 'No such user'
-                    };
-                }
-                var row = result.result.rows[0]
-                var computedPinHash = CryptoUtil.hash(pin, row.salt);
-                if (row.pinhash === computedPinHash) {
-                    // yay, pin is correct we can now decrypt private key
-                    row.privatekey = CryptoUtil.decryptData(row.privatekey, pin);
-                    return row;
-                } else {
-                    return {
-                        error_message: 'Incorrect pin'
-                    };
-                }
-            });
+        return this.Wallet.findOne({
+            where: {
+                msisdn: msisdn
+            }
+        }).then(function(dbResult) {
+            if(!dbResult) {
+                return {
+                    error_message: 'No such wallet exists'
+                };
+            }
+            var data = dbResult.dataValues;
+            console.log(data);
+            var computedPinHash = CryptoUtil.hash(pin, data.salt);
+            if (data.pinhash === computedPinHash) {
+                // yay, pin is correct we can now decrypt private key
+                return {
+                    msisdn: data.msisdn,
+                    address: data.address,
+                    privatekey: CryptoUtil.decryptData(data.privatekey, pin),
+                    publickey: data.publickey,
+                    salt: data.salt
+                };
+            } else {
+                return {
+                    error_message: 'Incorrect pin'
+                };
+            }
+        });
     },
     
+    /**
+     * Create a wallet and add it to db
+     */
     create: function(msisdn, pin) {
         var salt = Sjcl.codec.base64.fromBits(Sjcl.random.randomWords(64/4));
         var key = this._generateKeyPair();
@@ -43,24 +79,26 @@ var Wallet = {
         var privateKeyEncrypted = CryptoUtil.encryptData(privateKey, encryptionKey);
         var address = this.addressFromPublicKey(publicKey);
 
-        return DbUtil.promiseConnection()
-            .then(DbUtil.chainedQuery(
-                "INSERT INTO wallet  \
-                    (msisdn, address, publickey, privatekey, pinhash, salt) \
-                VALUES ( $1, $2, $3, $4, $5, $6)",
-                [msisdn, address, publicKey, privateKeyEncrypted, pinHash, salt]))
-            .then(function(successResult) {
-                return {
-                    success: true,
-                    publicKey: publicKey,
-                    privateKey: privateKey,
-                    address: address
-                };
-            }, function(failureResult) {
-                return {
-                    success: false
-                };
-            });
+        return this.Wallet.create({
+            msisdn: msisdn,
+            address: address,
+            publickey: publicKey,
+            privatekey: privateKeyEncrypted,
+            pinhash: pinHash,
+            salt: salt
+        }).then(function(result) {
+            return {
+                success: true,
+                publicKey: publicKey,
+                privateKey: privateKey,
+                address: address
+            };
+        }, function(error) {
+            return {
+                success: false,
+                errorMessage: error.errors[0].message
+            };
+        });
     },
 
     addressFromPublicKey: function(publicKey) {

@@ -1,8 +1,17 @@
-var WalletModel = require('../models/wallet');
 var Validator = require('validator');
 var Restify = require('restify');
 
+var WalletModel = require('../models/wallet');
+var Config = require('../config');
+
 var Wallet = {
+    /**
+     * View method for POST /v1/wallet
+     *
+     * Body arguments (JSON or urlencoded)
+     * msisdn - currently limited to one locale (set in Config.VALIDATION_COUNTRY)
+     * pin - integer at least 5 digits
+     */
     create: function(req, res, next) {
         var params = Wallet._parseWalletParams(req);
 
@@ -79,7 +88,7 @@ var Wallet = {
             error_message = 'missing argument';
         }
         // TODO: this shouldn't just be ZA
-        else if (!Validator.isMobilePhone(msisdn, 'en-ZA')) {
+        else if (!Validator.isMobilePhone(msisdn, Config.VALIDATION_COUNTRY)) {
             error_message = 'not a validate mobile number';
         }
         else if (!Validator.isNumeric(pin)) {
