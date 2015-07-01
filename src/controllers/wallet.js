@@ -4,7 +4,7 @@ var Restify = require('restify');
 var WalletModel = require('../models/wallet');
 var Config = require('../config');
 
-var Wallet = {
+var WalletController = {
     /**
      * View method for POST /v1/wallet
      *
@@ -105,4 +105,4 @@ var Wallet = {
         };
     },
 };
-module.exports = Wallet;
+module.exports = WalletController;
