@@ -13,14 +13,14 @@ var WalletController = {
      * pin - integer at least 5 digits
      */
     create: function(req, res, next) {
-        var params = Wallet._parseWalletParams(req);
+        var params = WalletController._parseWalletParams(req);
 
         if (params.error_message != '') {
             return next(new Restify.BadRequestError(params.error_message));
         }
 
         WalletModel.create(params.msisdn, params.pin)
-            .done(function(result) {
+            .then(function(result) {
                 // data from the model is good enough
                 res.send(result);
                 next();
@@ -39,8 +39,8 @@ var WalletController = {
     },
 
     fetch: function(req, res, next) {
-        var auth_headers = Wallet._parseAuthorizationHeader(req);
-        var params = Wallet._parseWalletParams(
+        var auth_headers = WalletController._parseAuthorizationHeader(req);
+        var params = WalletController._parseWalletParams(
             req,
             auth_headers.msisdn,
             auth_headers.pin);

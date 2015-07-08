@@ -56,4 +56,18 @@ describe("Wallet", function() {
                 done();
             });
     });
+    it("wallet create controller", function(done) {
+        var req = {
+            headers: {
+                Authorization: 'Basic '+new Buffer(fake_msisdn+':'+fake_pin).toString('base64')
+            },
+            params: {
+                msisdn: fake_msisdn,
+                pin: fake_pin
+            }
+        };
+        var res = {send:function(){}};
+        WalletController.create(req, res, done);
+    });
 });
+
