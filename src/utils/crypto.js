@@ -1,5 +1,6 @@
 var Sjcl = require('sjcl');
 
+
 var Crypto = {
     hash: function(data, salt) {
         salt = salt || '';
@@ -33,21 +34,21 @@ var Crypto = {
     },
 
     decryptData: function (encryptedData, key) {
-      var rawCipherText, rawIV, cipherName, modeName;
+        var rawCipherText, rawIV, cipherName, modeName;
 
-      try {
-        var resultObject = JSON.parse(base64Decode(encryptedData));
-        rawIV = Sjcl.codec.base64.toBits(resultObject.IV);
-        rawCipherText = Sjcl.codec.base64.toBits(resultObject.cipherText);
-        cipherName = resultObject.cipherName;
-        modeName = resultObject.modeName;
-      } catch(e) {
-        new errors.DataCorrupt();
-      }
+        try {
+            var resultObject = JSON.parse(base64Decode(encryptedData));
+            rawIV = Sjcl.codec.base64.toBits(resultObject.IV);
+            rawCipherText = Sjcl.codec.base64.toBits(resultObject.cipherText);
+            cipherName = resultObject.cipherName;
+            modeName = resultObject.modeName;
+        } catch(e) {
+            throw new Error('Unable to decrypt '+e);
+        }
 
-      var cipher = new Sjcl.cipher[cipherName](key);
-      var rawData = Sjcl.mode[modeName].decrypt(cipher, rawCipherText, rawIV);
-      return Sjcl.codec.utf8String.fromBits(rawData);
+        var cipher = new Sjcl.cipher[cipherName](key);
+        var rawData = Sjcl.mode[modeName].decrypt(cipher, rawCipherText, rawIV);
+        return Sjcl.codec.utf8String.fromBits(rawData);
     }
 };
 
